@@ -1,36 +1,27 @@
 package top
 
-class Landscape(val rows: Int, val columns: Int, val elevations: Iterator[Array[Int]]) {
+import scala.io.Source
 
-  lazy val locations = elevations.zipWithIndex.map {
-    case (row, rowId) => row.zipWithIndex.map {
-      case (elevation, columnId) => Location(rowId, columnId, elevation)
-    }
-  }.toArray
+case class Landscape(elevations: List[List[Int]]) {
+  private val locations = for {
+    (row, rowId) <- elevations.zipWithIndex.toMap
+    (elevation, columnId) <- row.zipWithIndex
+    point = Point(rowId, columnId)
+  } yield point -> Location(point, elevation, this)
 
-  def getLocation(rowId: Int, columnId: Int) =
-    if (isValidIndex(rowId, columnId)) Some(locations(rowId)(columnId)) else None
+  def getLocation(point: Point) = locations.get(point)
 
-  def isValidIndex(rowId: Int, columnId: Int) =
-    rowId < rows && columnId < columns && rowId >= 0 && columnId >= 0
+  def bestLocation = locations.values.toSeq.maxBy(l => (l.maxPathLength, l.drop))
+}
 
-  lazy val best = locations.flatten.maxBy(l => (l.depth, l.elevation))
-
-  case class Location(rowId: Int, columnId: Int, elevation: Int) {
-    lazy val neighbours = List(
-      getLocation(rowId, columnId + 1),
-      getLocation(rowId, columnId - 1),
-      getLocation(rowId + 1, columnId),
-      getLocation(rowId - 1, columnId)
-    ).flatten
-
-    lazy val children = neighbours.filter(_.elevation < elevation)
-
-    lazy val depth: Int = if(children.isEmpty) 1 else 1 + children.map(_.depth).max
-
-    lazy val path: List[Location] = children match {
-      case Nil => this :: Nil
-      case _   => this :: children.maxBy(_.depth).path
-    }
+object Landscape {
+  def parseFile(file: String) = Landscape {
+    Source.fromFile(file)
+      .getLines()
+      .drop(1)
+      .map(parseLine)
+      .toList
   }
+
+  private def parseLine(line: String) = line.split(" ").map(_.toInt).toList
 }
