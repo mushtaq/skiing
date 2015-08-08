@@ -11,7 +11,7 @@ case class Landscape(elevations: List[List[Int]]) {
 
   def getLocation(point: Point) = locations.get(point)
 
-  def bestLocation = locations.values.toSeq.maxBy(l => (l.maxPathLength, l.drop))
+  def bestLocation = locations.values.toSeq.maxBy(l => (l.pathLength, l.dropLength))
 }
 
 object Landscape {
